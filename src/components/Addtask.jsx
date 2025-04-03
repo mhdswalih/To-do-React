@@ -5,7 +5,7 @@ function AddTask(props) {
     const [value, setValue] = useState('');
 
     const addItem = () => {
-        props.addTask(value.trim());  // Changed to lowercase 'a' to match prop
+        props.addTask(value.trim());  
         setValue('');
     };
 

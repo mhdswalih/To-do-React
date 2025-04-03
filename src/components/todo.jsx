@@ -1,44 +1,124 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import AddTask from "./AddTask";
 import ListTask from "./ListTask";
 import ListCompleted from "./ListComplted";
+import Snackbar from "@mui/material/Snackbar";
+import MuiAlert from "@mui/material/Alert";
+const Alert = (props) => {
+    return <MuiAlert elevation={6} variant="filled" {...props} />;
+};
 
 function Todo() {
     const [tasks, setTask] = useState([]);
     const [completed, setCompleted] = useState([]);
+    const [snackOpen, setSnackOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
+    const [snackSeverity, setSnackSeverity] = useState("success");
 
-    const addTask = (task) => {
-        if (task) {
-            setTask([...tasks, task]);
-        }
+    useEffect(() => {
+        const storedTasks = JSON.parse(localStorage.getItem("tasks")) || [];
+        const storedCompleted = JSON.parse(localStorage.getItem("completed")) || [];
+    
+        setTask(storedTasks);
+        setCompleted(storedCompleted);
+    }, []); 
+    
+    const showSnackbar = (message, severity = "success") => {
+        setSnackMessage(message);
+        setSnackSeverity(severity);
+        setSnackOpen(true);
     };
-
+    const handleSnackClose = () => {
+        setSnackOpen(false);
+    };
+    const addTask = (task) => {
+        if (!task) {
+            showSnackbar("Task cannot be empty!", "warning");
+            return;
+        }
+        if (tasks.includes(task)) {
+            showSnackbar("Task already exists!", "error");
+            return;
+        }
+            const updatedTasks = [...tasks, task];
+            setTask(updatedTasks);
+            localStorage.setItem("tasks", JSON.stringify(updatedTasks)); 
+            showSnackbar("Task added successfully!", "success");
+    };
+  
     const deleteTask = (index, taskType = 'pending') => {
         let newTasks = taskType === 'pending' ? [...tasks] : [...completed];
         newTasks.splice(index, 1);
-        if (taskType === 'pending') setTask(newTasks);
-        else setCompleted(newTasks);
-    };
+        if (taskType === 'pending'){
+            setTask(newTasks)
+           localStorage.setItem('tasks',JSON.stringify(newTasks)) 
+           showSnackbar(`Task deleted!`, "error");
 
-    const completeTask = (index) => {
-        setCompleted([...completed, tasks[index]]);
-        deleteTask(index);
+        }else{
+             setCompleted(newTasks)
+           localStorage.setItem('complted',JSON.stringify(newTasks)) 
+           showSnackbar(`Task  deleted!`, "error");
+        }
     };
+   
+    const completeTask = (index) => {
+        const taskToComplete = tasks[index]; 
+        if (completed.includes(taskToComplete)) {
+            showSnackbar("Task is already completed!", "info");
+            return;
+        }
+        const updatedCompleted = [...completed, taskToComplete];
+        setCompleted(updatedCompleted);
+        localStorage.setItem("completed", JSON.stringify(updatedCompleted)); 
+    
+        const updatedTasks = tasks.filter((_, i) => i !== index);
+        setTask(updatedTasks);
+        localStorage.setItem("tasks", JSON.stringify(updatedTasks)); 
+
+        
+    showSnackbar("Task marked as completed!", "success");
+    };
+    
 
     const restoreTask = (index) => {
-        let restoringTask = completed.splice(index, 1);
-        setCompleted([...completed]);
-        addTask(...restoringTask);
+       
+        const restoringTask = completed[index];
+        
+    if (tasks.includes(restoringTask)) {
+        showSnackbar("Task is already in the pending list!", "success");
+        return;
+    }
+       
+        const updatedCompleted = completed.filter((_, i) => i !== index);
+        setCompleted(updatedCompleted);
+        localStorage.setItem("completed", JSON.stringify(updatedCompleted)); 
+    
+       
+        const updatedTasks = [...tasks, restoringTask];
+        setTask(updatedTasks);
+        localStorage.setItem("tasks", JSON.stringify(updatedTasks)); 
+        showSnackbar("Task restored successfully!", "success");
     };
+    
 
     const edit = (index, task) => {
         let newTask = [...tasks];
+        if (newTask.some((t, i) => t === task && i !== index)) {
+            showSnackbar("Task already exists!","success");
+            return;
+        }
         newTask[index] = task;
-        setTask(newTask);
+         setTask(newTask);
+        localStorage.setItem("tasks", JSON.stringify(newTask));
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
+            <Snackbar open={snackOpen} autoHideDuration={2000} onClose={handleSnackClose}>
+            <Alert onClose={handleSnackClose} severity={snackSeverity}>
+                {snackMessage}
+            </Alert>
+        </Snackbar>
             <div className="max-w-2xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-8">
